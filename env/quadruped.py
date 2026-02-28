@@ -36,6 +36,10 @@ import numpy as np
 import time
 import re
 import quadruped_motor
+from a1_kinematics import (
+  compute_leg_inverse_kinematics,
+  compute_leg_jacobian_and_foot_position,
+)
 
 class Quadruped(object):
   """The quadruped class to simulate a quadruped robot.
@@ -330,47 +334,14 @@ class Quadruped(object):
     """ Get Jacobian and foot position of leg legID. 
     Leg 0: FR; Leg 1: FL; Leg 2: RR ; Leg 3: RL;
     """
-    # joint positions of leg legID
     q = self.GetMotorAngles()[legID*3:legID*3+3]
-
-    # rename links
-    l1 = self._robot_config.HIP_LINK_LENGTH
-    l2 = self._robot_config.THIGH_LINK_LENGTH
-    l3 = self._robot_config.CALF_LINK_LENGTH
-
-    sideSign = 1
-    if legID == 0 or legID == 2:
-      sideSign = -1
-
-    s1 = np.sin(q[0])
-    s2 = np.sin(q[1])
-    s3 = np.sin(q[2])
-
-    c1 = np.cos(q[0])
-    c2 = np.cos(q[1])
-    c3 = np.cos(q[2])
-
-    c23 = c2 * c3 - s2 * s3
-    s23 = s2 * c3 + c2 * s3
-
-    J = np.zeros((3,3))
-
-    J[1, 0] = -sideSign * l1 * s1 + l2 * c2 * c1 + l3 * c23 * c1
-    J[2, 0] =  sideSign * l1 * c1 + l2 * c2 * s1 + l3 * c23 * s1
-    J[0, 1] = -l3 * c23 - l2 * c2
-    J[1, 1] = -l2 * s2 * s1 - l3 * s23 * s1
-    J[2, 1] = l2 * s2 * c1 + l3 * s23 * c1
-    J[0, 2] = -l3 * c23
-    J[1, 2] = -l3 * s23 *s1
-    J[2, 2] = l3 * s23 * c1  
-
-    # foot pos
-    pos = np.zeros(3)
-    pos[0] = -l3 * s23 - l2 * s2
-    pos[1] = l1 * sideSign * c1 + l3 * (s1 * c23) + l2 * c2 * s1
-    pos[2] = l1 * sideSign * s1 - l3 * (c1 * c23) - l2 * c1 * c2
-
-    return J, pos
+    return compute_leg_jacobian_and_foot_position(
+      leg_id=legID,
+      leg_joint_positions=q,
+      hip_link_length=self._robot_config.HIP_LINK_LENGTH,
+      thigh_link_length=self._robot_config.THIGH_LINK_LENGTH,
+      calf_link_length=self._robot_config.CALF_LINK_LENGTH,
+    )
 
   def ComputeInverseKinematics(self,legID, xyz_coord):
     """ Get joint angles for leg legID with desired xyz position in leg frame. 
@@ -380,39 +351,13 @@ class Quadruped(object):
     From SpotMicro: 
     https://github.com/OpenQuadruped/spot_mini_mini/blob/spot/spotmicro/Kinematics/LegKinematics.py
     """
-    # rename links
-    shoulder_length = self._robot_config.HIP_LINK_LENGTH
-    elbow_length = self._robot_config.THIGH_LINK_LENGTH
-    wrist_length =  self._robot_config.CALF_LINK_LENGTH
-    # coords
-    x = xyz_coord[0]
-    y = xyz_coord[1]
-    z = xyz_coord[2]
-
-    # get_domain
-    D = (y**2 + (-z)**2 - shoulder_length**2 +
-        (-x)**2 - elbow_length**2 - wrist_length**2) / (
-                 2 * wrist_length * elbow_length)
-
-    D = np.clip(D, -1.0, 1.0)
-
-    # check Right vs Left leg for hip angle
-    sideSign = 1
-    if legID == 0 or legID == 2:
-      sideSign = -1
-
-    # Right Leg Inverse Kinematics Solver
-    wrist_angle = np.arctan2(-np.sqrt(1 - D**2), D)
-    sqrt_component = y**2 + (-z)**2 - shoulder_length**2
-    if sqrt_component < 0.0:
-        sqrt_component = 0.0
-    shoulder_angle = -np.arctan2(z, y) - np.arctan2(
-        np.sqrt(sqrt_component), sideSign*shoulder_length)
-    elbow_angle = np.arctan2(-x, np.sqrt(sqrt_component)) - np.arctan2(
-        wrist_length * np.sin(wrist_angle),
-        elbow_length + wrist_length * np.cos(wrist_angle))
-    joint_angles = np.array([-shoulder_angle, elbow_angle, wrist_angle])
-    return joint_angles
+    return compute_leg_inverse_kinematics(
+      leg_id=legID,
+      xyz_coord=np.asarray(xyz_coord),
+      hip_link_length=self._robot_config.HIP_LINK_LENGTH,
+      thigh_link_length=self._robot_config.THIGH_LINK_LENGTH,
+      calf_link_length=self._robot_config.CALF_LINK_LENGTH,
+    )
 
   ######################################################################################
   # RESET related
