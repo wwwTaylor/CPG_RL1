@@ -31,7 +31,6 @@
 """Defines the A1 robot related constants and URDF specs."""
 import numpy as np
 import re
-import pybullet as pyb
 import os, inspect
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -52,8 +51,7 @@ INIT_POSITION = [0, 0, 0.305]  # normal initial height
 IS_FALLEN_HEIGHT = 0.18        # height at which robot is considered fallen
 
 INIT_ORIENTATION = (0, 0, 0, 1) 
-_, INIT_ORIENTATION_INV = pyb.invertTransform(
-        position=[0, 0, 0], orientation=INIT_ORIENTATION)
+INIT_ORIENTATION_INV = (0, 0, 0, 1)
 
 # default angles (for init)
 DEFAULT_HIP_ANGLE = 0

@@ -92,6 +92,27 @@ The CPG and RL framework are based on:
 
 ---
 
+
+## 🚀 Train in Isaac Lab (A1)
+
+You can now launch Isaac Lab training directly from this repo using:
+
+```bash
+python run_isaac_training.py --isaaclab-path /path/to/IsaacLab --headless
+```
+
+Notes:
+- If `--isaaclab-path` is omitted, the script reads `ISAACLAB_PATH`.
+- Default task is `Isaac-Velocity-Flat-Unitree-A1-v0`.
+- The launcher forwards options like `--num-envs`, `--max-iterations`, `--seed`, and checkpoint resume.
+
+Example:
+
+```bash
+export ISAACLAB_PATH=/opt/IsaacLab
+python run_isaac_training.py --num-envs 4096 --max-iterations 2000 --headless
+```
+
 ## 💡 Tips & Tricks
 
 - ⚡ If your simulation is slow, remove `time.sleep()` calls and disable camera resets in [quadruped\_gym\_env.py](./env/quadruped_gym_env.py).
